@@ -10,7 +10,7 @@ database=Database()
 
 # API endpoint to get the data
 def MinertoJson(obj):
-    t={"username":obj.username,"target":str(obj.target),"hashrate":obj.hashrate}
+    t={"user_id":obj.user_id,"username":obj.username,"target":str(obj.target),"hashrate":obj.hashrate}
     return t
 def toJsonShareData(data):
     target=block_bits2target(data.target_network)
@@ -31,20 +31,27 @@ def get_pool_data():
     response=[]
     # user_data=database.custom_query("select * from miners,share_record where miners.id=share_record.id_user")
     users=database.find_all(Miner)
+    if not users:
+        users=[]
     tt_hashrate=0
     walletinfo=rpc_getwallet()
     total=0
-    # json_user=[]
+    json_users=[]
     for user in users:
-        # json_user.append(MinertoJson(user))
+        json_users.append(MinertoJson(user))
         if user.hashrate is not None:
             tt_hashrate+=int(str(user.hashrate))
     rewards=database.find_all(Reward)
-    for reward in rewards:
-        t=rpc_gettxn(reward.reward_id,reward.block)
-        total+=t["vout"][0]["value"]
+    if rewards:
+        for reward in rewards:
+            t=rpc_gettxn(reward.reward_id,reward.block)
+            total+=t["vout"][0]["value"]
+    else:
+        rewards=[]
+    
     pool_data=({"title":"Pool Information",
-    "miners": len(users),
+    "numberMiners": len(users),
+    "miners":json_users,
     "total_hashrate": tt_hashrate,
     "balance":walletinfo["balance"],
     "immature_balance":walletinfo["immature_balance"],
